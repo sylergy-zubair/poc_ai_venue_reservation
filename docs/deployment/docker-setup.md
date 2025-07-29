@@ -19,9 +19,9 @@ This guide provides comprehensive instructions for containerizing the AI-powered
 │           └─────────────────────┼───────────────────┘       │
 │                                 │                           │
 │  ┌─────────────────┐  ┌─────────▼─────────┐               │
-│  │     Redis       │  │     Networks      │               │
-│  │   (Optional)    │  │   - app-network   │               │
-│  │   Port: 6379    │  │   - bridge        │               │
+│  │   Ollama LLM    │  │     Networks      │               │
+│  │   (Local AI)    │  │   - app-network   │               │
+│  │   Port: 11434   │  │   - bridge        │               │
 │  └─────────────────┘  └───────────────────┘               │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -277,7 +277,8 @@ services:
       - PORT=3001
       - MONGODB_URI=mongodb://mongo:27017/venue_booking_prod
       - REDIS_URL=redis://redis:6379
-      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - OLLAMA_API_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.1:8b
       - VENUE_API_KEY=${VENUE_API_KEY}
       - JWT_SECRET=${JWT_SECRET}
       - CORS_ORIGIN=http://frontend:3000
@@ -286,7 +287,7 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
-      redis:
+      ollama:
         condition: service_healthy
     networks:
       - app-network
@@ -323,22 +324,24 @@ services:
       retries: 3
       start_period: 40s
 
-  redis:
-    image: redis:7-alpine
-    container_name: venue-booking-redis
+  ollama:
+    image: ollama/ollama:latest
+    container_name: venue-booking-ollama
     ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0
     networks:
       - app-network
     restart: unless-stopped
     volumes:
-      - redis-data:/data
+      - ollama-data:/root/.ollama
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
   nginx:
     image: nginx:alpine
@@ -368,7 +371,7 @@ volumes:
     driver: local
   mongo-config:
     driver: local
-  redis-data:
+  ollama-data:
     driver: local
   backend-logs:
     driver: local
@@ -413,7 +416,8 @@ services:
       - NODE_ENV=development
       - PORT=3001
       - MONGODB_URI=mongodb://mongo:27017/venue_booking_dev
-      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - OLLAMA_API_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.1:8b
       - VENUE_API_KEY=${VENUE_API_KEY}
       - JWT_SECRET=dev-secret-key
       - CORS_ORIGIN=http://localhost:3000
@@ -576,8 +580,11 @@ MONGODB_URI=mongodb://admin:secure_password_here@mongo:27017/venue_booking_prod?
 REDIS_PASSWORD=redis_password_here
 REDIS_URL=redis://:redis_password_here@redis:6379
 
+# AI Configuration (Ollama - Local LLM)
+OLLAMA_API_URL=http://ollama:11434
+OLLAMA_MODEL=llama3.1:8b
+
 # API Keys
-CLAUDE_API_KEY=your_claude_api_key_here
 VENUE_API_KEY=your_venue_api_key_here
 
 # Security
@@ -602,19 +609,17 @@ version: '3.8'
 services:
   backend:
     secrets:
-      - claude_api_key
       - venue_api_key
       - jwt_secret
       - mongo_password
     environment:
-      - CLAUDE_API_KEY_FILE=/run/secrets/claude_api_key
       - VENUE_API_KEY_FILE=/run/secrets/venue_api_key
       - JWT_SECRET_FILE=/run/secrets/jwt_secret
       - MONGO_PASSWORD_FILE=/run/secrets/mongo_password
+      - OLLAMA_API_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.1:8b
 
 secrets:
-  claude_api_key:
-    external: true
   venue_api_key:
     external: true
   jwt_secret:

@@ -40,8 +40,8 @@ The AI-Powered Venue Search & Booking POC follows a microservices-inspired archi
 │ External APIs  │    │   MongoDB        │
 │                │    │                  │
 │ ┌────────────┐ │    │ ┌──────────────┐ │
-│ │ Claude AI  │ │    │ │ Sessions     │ │
-│ │ (Anthropic)│ │    │ │ Collection   │ │
+│ │ Ollama LLM │ │    │ │ Sessions     │ │
+│ │ (Local AI) │ │    │ │ Collection   │ │
 │ └────────────┘ │    │ └──────────────┘ │
 │                │    │ ┌──────────────┐ │
 │ ┌────────────┐ │    │ │ Audit Logs   │ │
@@ -84,7 +84,7 @@ The AI-Powered Venue Search & Booking POC follows a microservices-inspired archi
 - Error handling and response formatting
 
 **Key Services:**
-- **Entity Extraction Service**: Claude AI integration for NLP
+- **Entity Extraction Service**: Ollama LLM integration for local NLP
 - **Venue Search Service**: Third-party venue API integration
 - **Booking Service**: Booking request processing and confirmation
 - **Session Service**: User session and temporary data management
@@ -107,11 +107,12 @@ The AI-Powered Venue Search & Booking POC follows a microservices-inspired archi
 
 ### External Services Integration
 
-**Claude AI (Anthropic)**
-- Natural language processing
+**Ollama LLM (Local AI)**
+- Natural language processing with Llama 3.1 8B
 - Entity extraction from user queries
 - Intent recognition and classification
 - Response confidence scoring
+- Privacy-focused local processing
 
 **Venue Booking APIs**
 - Venue search and availability checking
@@ -132,7 +133,7 @@ User Query Input
        ↓
 [Entity Extraction Service]
        ↓
-[Claude API Integration]
+[Ollama LLM Integration]
        ↓
 [Entity Validation & Normalization]
        ↓
@@ -270,10 +271,10 @@ Venue Selection
 
 ### External Service Choices
 
-**Claude AI (Anthropic)**
-- **Pros**: Advanced NLP capabilities, structured responses
-- **Cons**: API costs, external dependency
-- **Decision**: Best-in-class for natural language understanding
+**Ollama LLM (Local AI)**
+- **Pros**: Zero API costs, privacy-focused, offline capable, consistent performance
+- **Cons**: Local resource requirements, model size
+- **Decision**: Cost-effective and privacy-focused solution for natural language understanding
 
 ## Deployment Architecture
 

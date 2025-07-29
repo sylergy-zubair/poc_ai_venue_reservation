@@ -8,8 +8,8 @@ This is a proof-of-concept (POC) for an AI-powered venue search and booking appl
 
 ### Key Components
 - **Frontend**: MERN stack (React/Next.js preferred) with responsive design
-- **Backend**: Node.js middleware that interfaces with Claude API and venue booking APIs  
-- **AI Processing**: Claude (Anthropic) for natural language understanding and entity extraction
+- **Backend**: Node.js middleware that interfaces with Ollama LLM and venue booking APIs  
+- **AI Processing**: Ollama with Llama 3.1 8B for natural language understanding and entity extraction (free local LLM)
 - **External Integration**: Third-party venue APIs (MeetingPackage, iVvy, etc.)
 
 ### Core Functionality

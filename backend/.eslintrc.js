@@ -1,0 +1,52 @@
+module.exports = {
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'module',
+    project: './tsconfig.json',
+  },
+  plugins: ['@typescript-eslint'],
+  extends: [
+    'eslint:recommended',
+    '@typescript-eslint/recommended',
+    '@typescript-eslint/recommended-requiring-type-checking',
+  ],
+  root: true,
+  env: {
+    node: true,
+    jest: true,
+    es2022: true,
+  },
+  ignorePatterns: ['.eslintrc.js', 'dist/', 'node_modules/', 'coverage/'],
+  rules: {
+    // TypeScript specific rules
+    '@typescript-eslint/interface-name-prefix': 'off',
+    '@typescript-eslint/explicit-function-return-type': 'error',
+    '@typescript-eslint/explicit-module-boundary-types': 'error',
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/no-unused-vars': 'error',
+    '@typescript-eslint/prefer-readonly': 'error',
+    '@typescript-eslint/prefer-readonly-parameter-types': 'off',
+    '@typescript-eslint/strict-boolean-expressions': 'error',
+    '@typescript-eslint/prefer-nullish-coalescing': 'error',
+    '@typescript-eslint/prefer-optional-chain': 'error',
+    
+    // General rules
+    'no-console': 'warn',
+    'no-debugger': 'error',
+    'prefer-const': 'error',
+    'no-var': 'error',
+    'object-shorthand': 'error',
+    'prefer-arrow-callback': 'error',
+    'prefer-template': 'error',
+    'template-curly-spacing': 'error',
+    'arrow-spacing': 'error',
+    'comma-dangle': ['error', 'always-multiline'],
+    'semi': ['error', 'always'],
+    'quotes': ['error', 'single'],
+    'indent': ['error', 2],
+    'max-len': ['error', { code: 100 }],
+    'no-trailing-spaces': 'error',
+    'eol-last': 'error',
+  },
+};

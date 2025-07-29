@@ -1,19 +1,19 @@
 # Phase 2: Core Backend API Development
 
 **Duration**: Week 2-3  
-**Goal**: TDD-driven backend API with Claude integration  
-**Status**: Pending  
+**Goal**: TDD-driven backend API with Ollama LLM integration  
+**Status**: Completed  
 **Prerequisites**: Phase 1 completed
 
 ## Overview
 
-Phase 2 focuses on building the core backend API services using strict TDD methodology. This includes integrating with Claude AI for natural language processing, implementing venue API integration, and creating a robust data layer for session management and logging.
+Phase 2 focuses on building the core backend API services using strict TDD methodology. This includes integrating with Ollama LLM (Llama 3.1 8B) for natural language processing, implementing venue API integration, and creating a robust data layer for session management and logging.
 
 ## Deliverables
 
 ### 2.1 Entity Extraction Service (TDD)
 
-**Objective**: Implement natural language processing using Claude API to extract venue search entities
+**Objective**: Implement natural language processing using Ollama LLM to extract venue search entities
 
 #### Core Functionality
 - Parse natural language queries (e.g., "I need a venue for 300 people in Barcelona next month")
