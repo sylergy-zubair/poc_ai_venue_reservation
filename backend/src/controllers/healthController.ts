@@ -104,7 +104,7 @@ export const getDetailedHealth = async (req: Request, res: Response): Promise<vo
                   healthReport.checks.venueApi.status === 'warning' ? 'degraded' : 'unhealthy',
           responseTime: healthReport.checks.venueApi.responseTime || 0,
           details: healthReport.checks.venueApi.details
-        }
+        },
       },
       system: {
         memory: {

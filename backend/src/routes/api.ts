@@ -4,6 +4,64 @@ import logger from '@/utils/logger';
 
 const router = express.Router();
 
+// Mock venue data
+const mockVenues = [
+  {
+    id: 'venue-1',
+    name: 'Madrid Convention Center',
+    description: 'Modern convention center in the heart of Madrid with state-of-the-art facilities.',
+    location: {
+      address: 'Calle de la Convención 123',
+      city: 'Madrid',
+      country: 'Spain',
+      coordinates: { lat: 40.4168, lng: -3.7038 }
+    },
+    capacity: { min: 50, max: 500, recommended: 300 },
+    pricing: { basePrice: 2000, currency: 'EUR', unit: 'day' },
+    amenities: ['WiFi', 'AV Equipment', 'Catering', 'Parking'],
+    categories: ['conference', 'meeting', 'corporate'],
+    images: ['https://example.com/madrid-cc-1.jpg'],
+    provider: 'VenueHub'
+  },
+  {
+    id: 'venue-2', 
+    name: 'Barcelona Event Space',
+    description: 'Stylish event space near the beach with flexible layouts.',
+    location: {
+      address: 'Passeig Marítim 456',
+      city: 'Barcelona',
+      country: 'Spain',
+      coordinates: { lat: 41.3851, lng: 2.1734 }
+    },
+    capacity: { min: 25, max: 200, recommended: 150 },
+    pricing: { basePrice: 1500, currency: 'EUR', unit: 'day' },
+    amenities: ['WiFi', 'Sound System', 'Lighting', 'Terrace'],
+    categories: ['conference', 'wedding', 'corporate'],
+    images: ['https://example.com/barcelona-es-1.jpg'],
+    provider: 'SpaceBooker'
+  },
+  {
+    id: 'venue-3',
+    name: 'Lisbon Business Hub',
+    description: 'Professional business center with meeting rooms and conference facilities.',
+    location: {
+      address: 'Avenida da Liberdade 789',
+      city: 'Lisbon',
+      country: 'Portugal', 
+      coordinates: { lat: 38.7223, lng: -9.1393 }
+    },
+    capacity: { min: 10, max: 100, recommended: 50 },
+    pricing: { basePrice: 800, currency: 'EUR', unit: 'day' },
+    amenities: ['WiFi', 'Projector', 'Conference Phones', 'Coffee Service'],
+    categories: ['meeting', 'corporate', 'training'],
+    images: ['https://example.com/lisbon-bh-1.jpg'],
+    provider: 'BusinessSpaces'
+  }
+];
+
+// Mock bookings storage
+const mockBookings = new Map();
+
 // Entity extraction endpoint
 router.post('/extract', async (req, res) => {
   try {
@@ -59,104 +117,23 @@ router.post('/extract', async (req, res) => {
 // Venue search endpoint
 router.post('/venues/search', async (req, res) => {
   try {
-    const { filters } = req.body;
+    const { filters = {}, page = 1, limit = 20 } = req.body;
     
-    logger.info('Searching venues', { filters, requestId: req.requestId });
+    logger.info('Searching venues with mock data', { 
+      filters, 
+      page, 
+      limit, 
+      requestId: req.requestId 
+    });
 
-    // Mock venue data for proof of concept
-    const mockVenues = [
-      {
-        id: "venue-1",
-        name: "Madrid Convention Center",
-        description: "Large conference facility in the heart of Madrid",
-        images: ["/images/venue1.jpg"],
-        location: {
-          address: "Calle de Alcalá 123",
-          city: "Madrid",
-          country: "Spain",
-          coordinates: { lat: 40.4168, lng: -3.7038 }
-        },
-        capacity: {
-          min: 50,
-          max: 500,
-          recommended: 300,
-          theater: 500
-        },
-        amenities: [
-          { id: "1", name: "WiFi", category: "tech", included: true },
-          { id: "2", name: "A/V Equipment", category: "tech", included: true },
-          { id: "3", name: "Parking", category: "parking", included: true }
-        ],
-        pricing: {
-          basePrice: 200,
-          currency: "EUR",
-          unit: "hour"
-        },
-        rating: 4.5,
-        reviewCount: 25,
-        categories: ["conference", "meeting"],
-        features: ["parking", "catering"],
-        provider: {
-          id: "provider-1",
-          name: "VenueProvider Madrid"
-        },
-        metadata: {
-          createdAt: "2024-01-01",
-          updatedAt: "2024-01-01",
-          verified: true,
-          featured: false
-        }
-      },
-      {
-        id: "venue-2",
-        name: "Barcelona Business Hub",
-        description: "Modern meeting space with excellent connectivity",
-        images: ["/images/venue2.jpg"],
-        location: {
-          address: "Passeig de Gràcia 456",
-          city: "Barcelona",
-          country: "Spain",
-          coordinates: { lat: 41.3851, lng: 2.1734 }
-        },
-        capacity: {
-          min: 20,
-          max: 150,
-          recommended: 100,
-          theater: 150
-        },
-        amenities: [
-          { id: "1", name: "WiFi", category: "tech", included: true },
-          { id: "2", name: "Video Conference", category: "tech", included: true }
-        ],
-        pricing: {
-          basePrice: 150,
-          currency: "EUR",
-          unit: "hour"
-        },
-        rating: 4.8,
-        reviewCount: 42,
-        categories: ["business", "meeting"],
-        features: ["wifi", "video"],
-        provider: {
-          id: "provider-2",
-          name: "VenueProvider Barcelona"
-        },
-        metadata: {
-          createdAt: "2024-01-01",
-          updatedAt: "2024-01-01",
-          verified: true,
-          featured: true
-        }
-      }
-    ];
-
-    // Simple filtering logic
-    let filteredVenues = mockVenues;
+    // Filter venues based on criteria
+    let filteredVenues = [...mockVenues];
 
     if (filters.location) {
+      const location = filters.location.toLowerCase();
       filteredVenues = filteredVenues.filter(venue => 
-        venue.location.city.toLowerCase().includes(filters.location.toLowerCase()) ||
-        venue.location.country.toLowerCase().includes(filters.location.toLowerCase())
+        venue.location.city.toLowerCase().includes(location) ||
+        venue.location.country.toLowerCase().includes(location)
       );
     }
 
@@ -167,26 +144,33 @@ router.post('/venues/search', async (req, res) => {
     }
 
     if (filters.eventType) {
-      filteredVenues = filteredVenues.filter(venue => 
-        venue.categories.includes(filters.eventType)
+      const eventType = filters.eventType.toLowerCase();
+      filteredVenues = filteredVenues.filter(venue =>
+        venue.categories.includes(eventType)
       );
     }
 
+    // Pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedVenues = filteredVenues.slice(startIndex, endIndex);
+
+    const searchResult = {
+      venues: paginatedVenues,
+      totalCount: filteredVenues.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredVenues.length / limit),
+      metadata: {
+        searchTime: Math.random() * 100 + 50,
+        sessionId: req.requestId,
+        provider: 'mock'
+      }
+    };
+
     res.json({
       success: true,
-      data: {
-        venues: filteredVenues,
-        totalCount: filteredVenues.length,
-        page: 1,
-        limit: 20,
-        hasMore: false,
-        filters,
-        metadata: {
-          searchTime: 150,
-          query: filters.query,
-          sessionId: req.requestId
-        }
-      }
+      data: searchResult
     });
 
   } catch (error) {
@@ -201,41 +185,117 @@ router.post('/venues/search', async (req, res) => {
   }
 });
 
+// Get venue details by ID
+router.get('/venues/:venueId', async (req, res) => {
+  try {
+    const { venueId } = req.params;
+    
+    logger.info('Fetching venue details', { venueId, requestId: req.requestId });
+
+    const venue = mockVenues.find(v => v.id === venueId);
+
+    if (!venue) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'VENUE_NOT_FOUND',
+          message: 'Venue not found'
+        }
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: venue
+    });
+
+  } catch (error) {
+    logger.error('Venue details fetch failed', { error: error.message, requestId: req.requestId });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'VENUE_FETCH_FAILED',
+        message: 'Failed to fetch venue details'
+      }
+    });
+  }
+});
+
 // Booking endpoint
 router.post('/venues/book', async (req, res) => {
   try {
     const { contact, details } = req.body;
     
-    logger.info('Creating booking', { contact, details, requestId: req.requestId });
+    logger.info('Creating booking with mock data', { 
+      contact: contact?.email, 
+      venueId: details?.venueId,
+      requestId: req.requestId 
+    });
 
-    // Mock booking response
-    const bookingResponse = {
-      bookingId: `booking_${Date.now()}`,
+    // Validate required fields
+    if (!contact?.name || !contact?.email || !details?.venueId) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_BOOKING_DATA',
+          message: 'Missing required booking information'
+        }
+      });
+      return;
+    }
+
+    // Find venue
+    const venue = mockVenues.find(v => v.id === details.venueId);
+    if (!venue) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'VENUE_NOT_FOUND',
+          message: 'Venue not found'
+        }
+      });
+      return;
+    }
+
+    // Create booking
+    const bookingId = `BOOK_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    const booking = {
+      bookingId,
       status: 'pending',
       venue: {
-        id: details.venueId,
-        name: "Madrid Convention Center"
+        id: venue.id,
+        name: venue.name,
+        location: venue.location
       },
-      details,
       contact,
-      totalPrice: 800,
-      currency: "EUR",
-      confirmationDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      details,
+      pricing: {
+        basePrice: venue.pricing.basePrice,
+        totalPrice: venue.pricing.basePrice,
+        currency: venue.pricing.currency,
+        breakdown: [
+          { item: 'Venue rental', amount: venue.pricing.basePrice }
+        ]
+      },
       nextSteps: [
-        "Venue provider will contact you within 24 hours",
-        "Confirm booking details and payment",
-        "Receive final confirmation"
+        'Venue will contact you within 24 hours',
+        'Payment details will be provided',
+        'Final confirmation required'
       ],
       metadata: {
         createdAt: new Date().toISOString(),
-        provider: "VenueProvider Madrid",
-        reference: `REF_${Date.now()}`
+        provider: 'mock',
+        reference: bookingId,
+        source: 'api'
       }
     };
 
+    mockBookings.set(bookingId, booking);
+
     res.json({
       success: true,
-      data: bookingResponse
+      data: booking
     });
 
   } catch (error) {
@@ -245,6 +305,99 @@ router.post('/venues/book', async (req, res) => {
       error: {
         code: 'BOOKING_FAILED',
         message: 'Failed to create booking'
+      }
+    });
+  }
+});
+
+// Get booking details by ID
+router.get('/bookings/:bookingId', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    
+    logger.info('Fetching booking details', { bookingId, requestId: req.requestId });
+
+    const booking = mockBookings.get(bookingId);
+
+    if (!booking) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'BOOKING_NOT_FOUND',
+          message: 'Booking not found'
+        }
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: booking
+    });
+
+  } catch (error) {
+    logger.error('Booking fetch failed', { error: error.message, requestId: req.requestId });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'BOOKING_FETCH_FAILED',
+        message: 'Failed to fetch booking details'
+      }
+    });
+  }
+});
+
+// Check venue availability
+router.get('/venues/:venueId/availability', async (req, res) => {
+  try {
+    const { venueId } = req.params;
+    const { date, startTime, endTime } = req.query;
+    
+    if (!date || !startTime || !endTime) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_PARAMETERS',
+          message: 'Date, startTime, and endTime are required'
+        }
+      });
+      return;
+    }
+
+    logger.info('Checking venue availability', { 
+      venueId, 
+      date, 
+      startTime, 
+      endTime, 
+      requestId: req.requestId 
+    });
+
+    // Mock availability check - assume available unless it's a weekend
+    const requestedDate = new Date(date as string);
+    const dayOfWeek = requestedDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    const availability = {
+      available: !isWeekend,
+      reason: isWeekend ? 'Venue closed on weekends' : null,
+      alternativeDates: isWeekend ? [
+        new Date(requestedDate.getTime() + 86400000).toISOString().split('T')[0], // Next day
+        new Date(requestedDate.getTime() + 172800000).toISOString().split('T')[0]  // Day after
+      ] : []
+    };
+
+    res.json({
+      success: true,
+      data: availability
+    });
+
+  } catch (error) {
+    logger.error('Availability check failed', { error: error.message, requestId: req.requestId });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'AVAILABILITY_CHECK_FAILED',
+        message: 'Failed to check venue availability'
       }
     });
   }

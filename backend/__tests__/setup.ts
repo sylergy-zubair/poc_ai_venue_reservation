@@ -5,6 +5,9 @@ let mongoServer: MongoMemoryServer;
 
 // Setup test database before all tests
 beforeAll(async () => {
+  // Configure test environment
+  process.env.NODE_ENV = 'test';
+  
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
   

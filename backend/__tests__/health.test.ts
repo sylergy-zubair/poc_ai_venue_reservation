@@ -54,7 +54,7 @@ describe('Health Endpoints', () => {
       expect(response.body).toHaveProperty('timestamp');
       
       expect(response.body.services).toHaveProperty('database');
-      expect(response.body.services).toHaveProperty('claudeApi');
+      expect(response.body.services).toHaveProperty('ollamaLlm');
       expect(response.body.services).toHaveProperty('venueProviders');
       
       expect(response.body.system).toHaveProperty('memory');
@@ -68,7 +68,7 @@ describe('Health Endpoints', () => {
         .expect(200);
 
       expect(response.body.services.database).toHaveProperty('responseTime');
-      expect(response.body.services.claudeApi).toHaveProperty('responseTime');
+      expect(response.body.services.ollamaLlm).toHaveProperty('responseTime');
       expect(response.body.services.venueProviders).toHaveProperty('responseTime');
     });
 
