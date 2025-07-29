@@ -6,6 +6,7 @@ import { addRequestMetadata } from '@/middleware/auth';
 import healthRoutes from '@/routes/health';
 import apiRoutes from '@/routes/api';
 import logger from '@/utils/logger';
+import { performanceMiddleware } from '@/utils/performanceMonitor';
 
 // Create Express application
 const app = express();
@@ -42,6 +43,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request metadata middleware
 app.use(addRequestMetadata);
+
+// Performance monitoring middleware
+app.use(performanceMiddleware);
 
 // Request logging middleware
 app.use((req, _res, next) => {
