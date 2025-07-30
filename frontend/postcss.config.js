@@ -1,6 +1,7 @@
 module.exports = {
   plugins: {
-    tailwindcss: {},
+    // Temporarily disabled Tailwind CSS to fix build issues
+    // tailwindcss: {},
     autoprefixer: {},
   },
 };

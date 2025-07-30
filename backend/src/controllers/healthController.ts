@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { HealthStatus, DetailedHealthStatus, ApiResponse, ServiceHealth, SystemHealth } from '@/types';
-import logger from '@/utils/logger';
-import { systemHealthChecker } from '@/services/systemHealthChecker';
-import { performanceMonitor } from '@/utils/performanceMonitor';
+import { HealthStatus, DetailedHealthStatus, ApiResponse, ServiceHealth, SystemHealth } from '../types';
+import logger from '../utils/logger';
+import { systemHealthChecker } from '../services/systemHealthChecker';
+import { performanceMonitor } from '../utils/performanceMonitor';
 
 // Package version from package.json
 const packageJson = require('../../package.json');
@@ -80,8 +80,10 @@ export const getDetailedHealth = async (req: Request, res: Response): Promise<vo
     
     // Convert the new format to the existing DetailedHealthStatus format for compatibility
     const detailedHealth: DetailedHealthStatus = {
-      status: healthReport.status,
-      overall: healthReport.status,
+      status: healthReport.status === 'critical' ? 'unhealthy' : 
+              healthReport.status === 'warning' ? 'degraded' : 'healthy',
+      overall: healthReport.status === 'critical' ? 'unhealthy' : 
+               healthReport.status === 'warning' ? 'degraded' : 'healthy',
       timestamp: healthReport.timestamp,
       version: packageJson.version,
       uptime: healthReport.uptime,
@@ -93,18 +95,18 @@ export const getDetailedHealth = async (req: Request, res: Response): Promise<vo
           responseTime: healthReport.checks.database.responseTime || 0,
           details: healthReport.checks.database.details
         },
-        ollamaLlm: {
-          status: healthReport.checks.ollamaApi.status === 'healthy' ? 'healthy' : 
-                  healthReport.checks.ollamaApi.status === 'warning' ? 'degraded' : 'unhealthy',
-          responseTime: healthReport.checks.ollamaApi.responseTime || 0,
-          details: healthReport.checks.ollamaApi.details
+        geminiLlm: {
+          status: healthReport.checks.geminiApi.status === 'healthy' ? 'healthy' : 
+                  healthReport.checks.geminiApi.status === 'warning' ? 'degraded' : 'unhealthy',
+          responseTime: healthReport.checks.geminiApi.responseTime || 0,
+          details: healthReport.checks.geminiApi.details
         },
         venueProviders: {
           status: healthReport.checks.venueApi.status === 'healthy' ? 'healthy' : 
                   healthReport.checks.venueApi.status === 'warning' ? 'degraded' : 'unhealthy',
           responseTime: healthReport.checks.venueApi.responseTime || 0,
           details: healthReport.checks.venueApi.details
-        },
+        }
       },
       system: {
         memory: {
@@ -114,16 +116,6 @@ export const getDetailedHealth = async (req: Request, res: Response): Promise<vo
         },
         cpu: {
           usage: Math.round(Math.random() * 30 + 10), // Simulate CPU usage
-        },
-        performance: {
-          metrics: performanceMetrics,
-          summary: performanceSummary
-        },
-        additionalChecks: {
-          memory: healthReport.checks.memory,
-          disk: healthReport.checks.disk,
-          performance: healthReport.checks.performance,
-          dependencies: healthReport.checks.dependencies
         }
       },
     };
@@ -135,9 +127,9 @@ export const getDetailedHealth = async (req: Request, res: Response): Promise<vo
       overallStatus: healthReport.status,
       serviceStatuses: {
         database: healthReport.checks.database.status,
-        ollamaLlm: healthReport.checks.ollamaApi.status,
-        venueProviders: healthReport.checks.venueApi.status,
-      },
+        geminiLlm: healthReport.checks.geminiApi.status,
+        venueProviders: healthReport.checks.venueApi.status
+      }
     });
     
     const statusCode = healthReport.overall ? 200 : 

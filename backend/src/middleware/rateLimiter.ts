@@ -1,6 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
-import { ApiResponse } from '@/types';
+import { ApiResponse } from '../types';
 
 // Extend Request interface for rate limiting
 declare module 'express' {

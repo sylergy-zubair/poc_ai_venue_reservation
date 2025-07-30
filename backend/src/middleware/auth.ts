@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApiResponse } from '@/types';
+import { ApiResponse } from '../types';
 
 // Extend Express Request type to include apiKey
 declare global {

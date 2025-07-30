@@ -1,6 +1,6 @@
 import express from 'express';
-import { extractEntities } from '@/services/ollama/entityExtraction';
-import logger from '@/utils/logger';
+import { extractEntities } from '../services/gemini/entityExtraction';
+import logger from '../utils/logger';
 
 const router = express.Router();
 

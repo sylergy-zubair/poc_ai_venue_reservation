@@ -12,7 +12,7 @@ export interface DetailedHealthStatus extends HealthStatus {
   overall: 'healthy' | 'degraded' | 'unhealthy';
   services: {
     database: ServiceHealth;
-    ollamaLlm: ServiceHealth;
+    geminiLlm: ServiceHealth;
     venueProviders: ServiceHealth;
   };
   system: SystemHealth;
@@ -155,5 +155,8 @@ export interface EntityExtractionResult {
     totalDuration?: number;
     loadDuration?: number;
     evalDuration?: number;
+    promptTokens?: number;
+    completionTokens?: number;
+    service?: string;
   };
 }

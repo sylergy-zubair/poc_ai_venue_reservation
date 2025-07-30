@@ -1,7 +1,7 @@
 // Main Ollama service integration
 import { OllamaApiClient, OllamaConfig } from './client';
 import { EntityExtractionService } from './entityExtraction';
-import logger from '@/utils/logger';
+import logger from '../../utils/logger';
 
 // Default configuration
 const DEFAULT_CONFIG: OllamaConfig = {

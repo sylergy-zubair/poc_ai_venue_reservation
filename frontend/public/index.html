@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Venue Booking - Find Your Perfect Event Space</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="logo">🏢 AI Venue Booking</h1>
+                <nav class="nav">
+                    <a href="#search" class="nav-link active">Search</a>
+                    <a href="#about" class="nav-link">About</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <!-- Hero Section -->
+            <section class="hero">
+                <h2 class="hero-title">Find Your Perfect Event Venue</h2>
+                <p class="hero-subtitle">Use natural language to describe your event needs, and our AI will find matching venues for you.</p>
+            </section>
+
+            <!-- Search Section -->
+            <section class="search-section" id="search">
+                <div class="search-card">
+                    <h3 class="search-title">Describe Your Event</h3>
+                    <form class="search-form" id="searchForm">
+                        <div class="form-group">
+                            <label for="query" class="form-label">What kind of venue do you need?</label>
+                            <textarea 
+                                id="query" 
+                                name="query" 
+                                class="form-textarea" 
+                                placeholder="e.g., I need a venue for 100 people in Madrid next month for a corporate conference with WiFi and catering"
+                                rows="3"
+                                required
+                            ></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="searchBtn">
+                            <span id="searchText">🔍 Search Venues</span>
+                            <span id="searchLoader" class="loader" style="display: none;">Searching...</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Entity Extraction Debug Panel -->
+                <div class="debug-panel" id="debugPanel" style="display: none;">
+                    <h4 class="debug-title">🔍 AI Analysis Results</h4>
+                    <div class="debug-content" id="debugContent"></div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h3 class="results-title">Available Venues</h3>
+                <div class="results-grid" id="resultsGrid"></div>
+            </section>
+
+            <!-- Booking Modal -->
+            <div class="modal" id="bookingModal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Book This Venue</h3>
+                        <button class="modal-close" id="closeModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="selectedVenueInfo"></div>
+                        <form class="booking-form" id="bookingForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="contactName" class="form-label">Full Name *</label>
+                                    <input type="text" id="contactName" name="contactName" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="contactEmail" class="form-label">Email *</label>
+                                    <input type="email" id="contactEmail" name="contactEmail" class="form-input" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="contactPhone" class="form-label">Phone</label>
+                                    <input type="tel" id="contactPhone" name="contactPhone" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contactCompany" class="form-label">Company</label>
+                                    <input type="text" id="contactCompany" name="contactCompany" class="form-input">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="eventDate" class="form-label">Event Date *</label>
+                                    <input type="date" id="eventDate" name="eventDate" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="attendeeCount" class="form-label">Number of Attendees *</label>
+                                    <input type="number" id="attendeeCount" name="attendeeCount" class="form-input" min="1" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="startTime" class="form-label">Start Time</label>
+                                    <input type="time" id="startTime" name="startTime" class="form-input" value="09:00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="endTime" class="form-label">End Time</label>
+                                    <input type="time" id="endTime" name="endTime" class="form-input" value="17:00">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventType" class="form-label">Event Type</label>
+                                <select id="eventType" name="eventType" class="form-input">
+                                    <option value="">Select event type</option>
+                                    <option value="conference">Conference</option>
+                                    <option value="meeting">Business Meeting</option>
+                                    <option value="wedding">Wedding</option>
+                                    <option value="party">Party</option>
+                                    <option value="workshop">Workshop</option>
+                                    <option value="seminar">Seminar</option>
+                                    <option value="corporate">Corporate Event</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="requirements" class="form-label">Special Requirements</label>
+                                <textarea id="requirements" name="requirements" class="form-textarea" rows="3" placeholder="Any special requirements or notes..."></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" id="cancelBooking">Cancel</button>
+                                <button type="submit" class="btn btn-primary" id="submitBooking">
+                                    <span id="bookingText">📅 Submit Booking Request</span>
+                                    <span id="bookingLoader" class="loader" style="display: none;">Submitting...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Modal -->
+            <div class="modal" id="successModal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">✅ Booking Request Submitted</h3>
+                        <button class="modal-close" id="closeSuccessModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="bookingSuccessContent"></div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary" id="closeSuccess">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="footer-text">
+                © 2024 AI Venue Booking - Powered by Ollama LLM & Mock Data
+                <span class="footer-link">
+                    <a href="#" onclick="toggleDebug()">Toggle Debug Mode</a>
+                </span>
+            </p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -5,8 +5,8 @@ import {
   ExtractionContext,
   VENUE_KEYWORDS 
 } from './prompts';
-import { EntityExtractionResult, ExtractedEntities } from '@/types';
-import logger from '@/utils/logger';
+import { EntityExtractionResult, ExtractedEntities } from '../../types';
+import logger from '../../utils/logger';
 
 export interface CacheService {
   get<T>(key: string): Promise<T | null>;

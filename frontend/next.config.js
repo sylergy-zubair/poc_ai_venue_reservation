@@ -2,9 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  experimental: {
-    typedRoutes: true,
-  },
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
@@ -46,6 +43,24 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'],
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Fix ESM module compatibility issues
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+    };
+
+    // Add rule to handle dlv and other problematic ESM packages
+    config.module.rules.push({
+      test: /node_modules\/(dlv|other-esm-packages)\//,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          presets: ['@babel/preset-env'],
+          plugins: ['@babel/plugin-transform-modules-commonjs']
+        }
+      }
+    });
+
     // Analyze bundle size in development
     if (process.env.ANALYZE === 'true') {
       const withBundleAnalyzer = require('@next/bundle-analyzer')({
@@ -55,6 +70,15 @@ const nextConfig = {
     }
     
     return config;
+  },
+  
+  // Transpile ESM packages that need it
+  transpilePackages: ['dlv'],
+  
+  // Additional module resolution for problematic packages
+  experimental: {
+    typedRoutes: true,
+    esmExternals: 'loose',
   },
 };
 

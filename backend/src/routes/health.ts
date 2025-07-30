@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { getHealth, getDetailedHealth } from '@/controllers/healthController';
-import { validateApiKey } from '@/middleware/auth';
-import { healthRateLimit, detailedHealthRateLimit } from '@/middleware/rateLimiter';
+import { getHealth, getDetailedHealth } from '../controllers/healthController';
+import { validateApiKey } from '../middleware/auth';
+import { healthRateLimit, detailedHealthRateLimit } from '../middleware/rateLimiter';
 
 const router = Router();
 

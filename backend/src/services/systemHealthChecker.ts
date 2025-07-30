@@ -3,8 +3,8 @@
  * Phase 4: Comprehensive health monitoring for all system components
  */
 
-import { performanceMonitor } from '../utils/performanceMonitor.js';
-import { logger } from '../utils/logger.js';
+import { performanceMonitor } from '../utils/performanceMonitor';
+import logger from '../utils/logger';
 import fs from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -25,7 +25,7 @@ export interface SystemHealthReport {
   status: 'healthy' | 'warning' | 'critical';
   checks: {
     database: HealthCheckResult;
-    ollamaApi: HealthCheckResult;
+    geminiApi: HealthCheckResult;
     venueApi: HealthCheckResult;
     memory: HealthCheckResult;
     disk: HealthCheckResult;
@@ -65,7 +65,7 @@ export class SystemHealthChecker {
 
     const checks = await Promise.allSettled([
       this.checkDatabase(),
-      this.checkOllamaApi(),
+      this.checkGeminiApi(),
       this.checkVenueApi(),
       this.checkMemoryUsage(),
       this.checkDiskSpace(),
@@ -75,7 +75,7 @@ export class SystemHealthChecker {
 
     const healthResults = {
       database: this.getResultFromSettled(checks[0]),
-      ollamaApi: this.getResultFromSettled(checks[1]),
+      geminiApi: this.getResultFromSettled(checks[1]),
       venueApi: this.getResultFromSettled(checks[2]),
       memory: this.getResultFromSettled(checks[3]),
       disk: this.getResultFromSettled(checks[4]),
@@ -167,77 +167,85 @@ export class SystemHealthChecker {
   }
 
   /**
-   * Check Ollama API connectivity
+   * Check Google Gemini API connectivity
    */
-  async checkOllamaApi(): Promise<HealthCheckResult> {
-    const timerId = performanceMonitor.startTimer('health_check_ollama');
+  async checkGeminiApi(): Promise<HealthCheckResult> {
+    const timerId = performanceMonitor.startTimer('health_check_gemini');
     
     try {
       const startTime = Date.now();
+      const apiKey = process.env.GEMINI_API_KEY;
       
-      // Check if Ollama service is running
-      const response = await fetch(`${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/api/tags`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(5000) // 5 second timeout
-      });
-
-      const responseTime = Date.now() - startTime;
-      performanceMonitor.endTimer(timerId);
-
-      if (!response.ok) {
+      if (!apiKey) {
+        performanceMonitor.endTimer(timerId);
         return {
           healthy: false,
           status: 'critical',
-          message: `Ollama API returned status ${response.status}`,
-          responseTime,
+          message: 'Gemini API key not configured',
           timestamp: new Date().toISOString(),
-          details: { 
-            status: response.status,
-            statusText: response.statusText,
-            responseTime: `${responseTime}ms`
-          }
+          details: { error: 'GEMINI_API_KEY environment variable not set' }
         };
       }
 
-      const data = await response.json();
-      const hasLlama = data.models?.some((model: any) => 
-        model.name.includes('llama') || model.name.includes('3.1')
-      );
+      // Use the Gemini client to perform a health check
+      const { GeminiApiClient } = await import('./gemini/client');
+      const geminiClient = new GeminiApiClient({
+        apiKey,
+        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash'
+      });
 
-      if (!hasLlama) {
+      const healthResult = await geminiClient.healthCheck();
+      const responseTime = Date.now() - startTime;
+      
+      performanceMonitor.endTimer(timerId);
+
+      if (healthResult.status === 'healthy') {
+        return {
+          healthy: true,
+          status: 'healthy',
+          message: 'Gemini API is responsive and model is available',
+          responseTime,
+          timestamp: new Date().toISOString(),
+          details: {
+            model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+            service: 'Google Gemini API',
+            responseTime: `${responseTime}ms`
+          }
+        };
+      } else {
         return {
           healthy: false,
-          status: 'warning',
-          message: 'Ollama is running but required model (Llama 3.1) is not available',
+          status: 'critical',
+          message: 'Gemini API health check failed',
           responseTime,
           timestamp: new Date().toISOString(),
-          details: { 
-            availableModels: data.models?.map((m: any) => m.name) || [],
+          details: {
+            ...healthResult.details,
             responseTime: `${responseTime}ms`
           }
         };
       }
-
-      return {
-        healthy: true,
-        status: 'healthy',
-        message: 'Ollama API is responsive and required models are available',
-        responseTime,
-        timestamp: new Date().toISOString(),
-        details: { 
-          modelCount: data.models?.length || 0,
-          responseTime: `${responseTime}ms`
-        }
-      };
 
     } catch (error) {
       performanceMonitor.endTimer(timerId);
-      logger.error('Ollama health check failed:', error);
+      logger.error('Gemini health check failed:', error);
+      
+      let message = 'Gemini API is unreachable';
+      let status: 'warning' | 'critical' = 'critical';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('API key')) {
+          message = 'Invalid Gemini API key';
+        } else if (error.message.includes('quota') || error.message.includes('rate limit')) {
+          message = 'Gemini API quota exceeded';
+          status = 'warning';
+        }
+      }
       
       return {
         healthy: false,
-        status: 'critical',
-        message: 'Ollama API is unreachable',
+        status,
+        message,
         timestamp: new Date().toISOString(),
         details: { error: error instanceof Error ? error.message : 'Connection failed' }
       };

@@ -2,11 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import { addRequestMetadata } from '@/middleware/auth';
-import healthRoutes from '@/routes/health';
-import apiRoutes from '@/routes/api';
-import logger from '@/utils/logger';
-import { performanceMiddleware } from '@/utils/performanceMonitor';
+import { addRequestMetadata } from './middleware/auth';
+import healthRoutes from './routes/health';
+import apiRoutes from './routes/api';
+import logger from './utils/logger';
+import { performanceMiddleware } from './utils/performanceMonitor';
 
 // Create Express application
 const app = express();
@@ -28,7 +28,12 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env['FRONTEND_URL'] || 'http://localhost:3000',
+  origin: [
+    process.env['FRONTEND_URL'] || 'http://localhost:3000',
+    'http://localhost:8080',
+    'http://localhost:8081',
+    'http://localhost:8082'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],

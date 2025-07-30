@@ -1,6 +1,14 @@
-# LLM Integration Guide - Ollama Setup
+# LLM Integration Guide - Ollama Setup (DEPRECATED)
+
+⚠️ **IMPORTANT: This integration has been replaced with Google Gemini API**
+
+**For current setup instructions, see: [LLM-Gemini.md](./LLM-Gemini.md)**
+
+---
 
 This document provides step-by-step instructions for setting up Ollama LLM integration to enable advanced natural language processing for venue search queries.
+
+**Note**: This documentation is kept for reference only. The application now uses Google Gemini API instead of Ollama for better reliability and performance.
 
 ## Overview
 
