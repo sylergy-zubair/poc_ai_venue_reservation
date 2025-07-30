@@ -254,7 +254,7 @@ export class SystemHealthChecker {
 
 
   /**
-   * Check external venue API connectivity
+   * Check external venue API connectivity (includes SimplyBook.me)
    */
   async checkVenueApi(): Promise<HealthCheckResult> {
     const timerId = performanceMonitor.startTimer('health_check_venue_api');
@@ -262,20 +262,65 @@ export class SystemHealthChecker {
     try {
       const startTime = Date.now();
       
-      // Check if venue APIs are configured
+      // Check if SimplyBook.me is configured
+      const { getSimplyBookVenueService, isSimplyBookConfigured } = await import('./simplybook');
+      
+      if (isSimplyBookConfigured()) {
+        // Check SimplyBook.me health
+        const venueService = getSimplyBookVenueService();
+        if (venueService) {
+          const healthResult = await venueService.healthCheck();
+          const responseTime = Date.now() - startTime;
+          performanceMonitor.endTimer(timerId);
+          
+          if (healthResult.status === 'healthy') {
+            return {
+              healthy: true,
+              status: 'healthy',
+              message: 'SimplyBook.me venue service is responsive',
+              responseTime,
+              timestamp: new Date().toISOString(),
+              details: {
+                provider: 'SimplyBook.me',
+                ...healthResult.details,
+                responseTime: `${responseTime}ms`
+              }
+            };
+          } else {
+            return {
+              healthy: false,
+              status: 'warning',
+              message: 'SimplyBook.me venue service is not healthy',
+              responseTime,
+              timestamp: new Date().toISOString(),
+              details: {
+                provider: 'SimplyBook.me',
+                ...healthResult.details,
+                responseTime: `${responseTime}ms`
+              }
+            };
+          }
+        }
+      }
+      
+      // Check if legacy venue APIs are configured
       const venueApiUrl = process.env.VENUE_API_URL;
       if (!venueApiUrl) {
         performanceMonitor.endTimer(timerId);
         return {
           healthy: false,
           status: 'warning',
-          message: 'Venue API URL not configured',
+          message: 'No venue APIs configured',
           timestamp: new Date().toISOString(),
-          details: { configuration: 'VENUE_API_URL environment variable missing' }
+          details: { 
+            configuration: 'Neither SimplyBook.me nor legacy venue APIs configured',
+            simplyBookConfigured: false,
+            legacyApiConfigured: false
+          }
         };
       }
 
-      // Simple connectivity check
+      // Simple connectivity check for legacy API
       const response = await fetch(`${venueApiUrl}/health`, {
         method: 'GET',
         signal: AbortSignal.timeout(3000) // 3 second timeout
@@ -288,10 +333,11 @@ export class SystemHealthChecker {
         return {
           healthy: false,
           status: 'warning',
-          message: `Venue API health check returned status ${response.status}`,
+          message: `Legacy venue API health check returned status ${response.status}`,
           responseTime,
           timestamp: new Date().toISOString(),
           details: { 
+            provider: 'Legacy API',
             status: response.status,
             url: venueApiUrl,
             responseTime: `${responseTime}ms`
@@ -302,10 +348,11 @@ export class SystemHealthChecker {
       return {
         healthy: true,
         status: 'healthy',
-        message: 'Venue API is responsive',
+        message: 'Legacy venue API is responsive',
         responseTime,
         timestamp: new Date().toISOString(),
         details: { 
+          provider: 'Legacy API',
           url: venueApiUrl,
           responseTime: `${responseTime}ms`
         }

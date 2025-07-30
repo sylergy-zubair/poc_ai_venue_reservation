@@ -1,5 +1,6 @@
 import express from 'express';
 import { extractEntities } from '../services/gemini/entityExtraction';
+import { getSimplyBookVenueService, isSimplyBookConfigured } from '../services/simplybook';
 import logger from '../utils/logger';
 
 const router = express.Router();
@@ -116,17 +117,91 @@ router.post('/extract', async (req, res) => {
 
 // Venue search endpoint
 router.post('/venues/search', async (req, res) => {
+  const startTime = Date.now();
+  
   try {
     const { filters = {}, page = 1, limit = 20 } = req.body;
     
-    logger.info('Searching venues with mock data', { 
+    // Check if SimplyBook.me is configured
+    const venueService = getSimplyBookVenueService();
+    const useSimplyBook = isSimplyBookConfigured() && venueService;
+    
+    logger.info('Searching venues', { 
       filters, 
       page, 
       limit, 
+      provider: useSimplyBook ? 'simplybook' : 'mock',
       requestId: req.requestId 
     });
 
-    // Filter venues based on criteria
+    if (useSimplyBook) {
+      // Use SimplyBook.me API
+      const searchParams = {
+        location: filters.location,
+        capacity: filters.capacity?.min,
+        date: filters.date ? new Date(filters.date) : undefined,
+        eventType: filters.eventType,
+        budget: filters.budget,
+        amenities: filters.amenities,
+      };
+
+      const venues = await venueService!.searchVenues(searchParams);
+      
+      // Transform to API response format
+      const transformedVenues = venues.map(venue => ({
+        id: venue.id,
+        name: venue.name,
+        description: venue.description,
+        location: {
+          address: `${venue.location} Venue`,
+          city: venue.location,
+          country: 'Spain', // Default for now
+          coordinates: { lat: 40.4168, lng: -3.7038 } // Default Madrid coords
+        },
+        capacity: { 
+          min: Math.floor(venue.capacity * 0.5), 
+          max: venue.capacity, 
+          recommended: Math.floor(venue.capacity * 0.8) 
+        },
+        pricing: { 
+          basePrice: venue.pricePerHour * 8, // Convert hourly to daily rate
+          currency: venue.currency, 
+          unit: 'day' 
+        },
+        amenities: venue.amenities,
+        categories: [filters.eventType || 'conference'].filter(Boolean),
+        images: venue.images || ['https://via.placeholder.com/800x400?text=Venue'],
+        provider: 'SimplyBook.me',
+        availability: venue.availability
+      }));
+
+      // Apply pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedVenues = transformedVenues.slice(startIndex, endIndex);
+
+      const searchResult = {
+        venues: paginatedVenues,
+        totalCount: transformedVenues.length,
+        page,
+        limit,
+        totalPages: Math.ceil(transformedVenues.length / limit),
+        metadata: {
+          searchTime: Date.now() - startTime,
+          sessionId: req.requestId,
+          provider: 'simplybook',
+          realtime: true
+        }
+      };
+
+      res.json({
+        success: true,
+        data: searchResult
+      });
+      return;
+    }
+
+    // Fallback to mock data when SimplyBook.me is not configured
     let filteredVenues = [...mockVenues];
 
     if (filters.location) {
@@ -162,7 +237,7 @@ router.post('/venues/search', async (req, res) => {
       limit,
       totalPages: Math.ceil(filteredVenues.length / limit),
       metadata: {
-        searchTime: Math.random() * 100 + 50,
+        searchTime: Date.now() - startTime,
         sessionId: req.requestId,
         provider: 'mock'
       }
@@ -192,6 +267,62 @@ router.get('/venues/:venueId', async (req, res) => {
     
     logger.info('Fetching venue details', { venueId, requestId: req.requestId });
 
+    // Check if SimplyBook.me is configured
+    const venueService = getSimplyBookVenueService();
+    const useSimplyBook = isSimplyBookConfigured() && venueService;
+
+    if (useSimplyBook) {
+      // Use SimplyBook.me API
+      const venue = await venueService!.getVenueById(venueId);
+
+      if (!venue) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'VENUE_NOT_FOUND',
+            message: 'Venue not found'
+          }
+        });
+        return;
+      }
+
+      // Transform to API response format
+      const transformedVenue = {
+        id: venue.id,
+        name: venue.name,
+        description: venue.description,
+        location: {
+          address: `${venue.location} Venue`,
+          city: venue.location,
+          country: 'Spain',
+          coordinates: { lat: 40.4168, lng: -3.7038 }
+        },
+        capacity: { 
+          min: Math.floor(venue.capacity * 0.5), 
+          max: venue.capacity, 
+          recommended: Math.floor(venue.capacity * 0.8) 
+        },
+        pricing: { 
+          basePrice: venue.pricePerHour * 8,
+          currency: venue.currency, 
+          unit: 'day' 
+        },
+        amenities: venue.amenities,
+        categories: ['conference'],
+        images: venue.images || ['https://via.placeholder.com/800x400?text=Venue'],
+        provider: 'SimplyBook.me',
+        availability: venue.availability,
+        contact: venue.contact
+      };
+
+      res.json({
+        success: true,
+        data: transformedVenue
+      });
+      return;
+    }
+
+    // Fallback to mock data
     const venue = mockVenues.find(v => v.id === venueId);
 
     if (!venue) {
@@ -227,9 +358,14 @@ router.post('/venues/book', async (req, res) => {
   try {
     const { contact, details } = req.body;
     
-    logger.info('Creating booking with mock data', { 
+    // Check if SimplyBook.me is configured
+    const venueService = getSimplyBookVenueService();
+    const useSimplyBook = isSimplyBookConfigured() && venueService;
+    
+    logger.info('Creating booking', { 
       contact: contact?.email, 
       venueId: details?.venueId,
+      provider: useSimplyBook ? 'simplybook' : 'mock',
       requestId: req.requestId 
     });
 
@@ -245,7 +381,75 @@ router.post('/venues/book', async (req, res) => {
       return;
     }
 
-    // Find venue
+    if (useSimplyBook) {
+      // Use SimplyBook.me API for real booking
+      const bookingRequest = {
+        venueId: details.venueId,
+        datetime: details.datetime || new Date(Date.now() + 86400000).toISOString(), // Tomorrow if not specified
+        client: {
+          name: contact.name,
+          email: contact.email,
+          phone: contact.phone || 'Not provided'
+        },
+        eventDetails: {
+          type: details.eventType,
+          capacity: details.capacity,
+          duration: details.duration || 8, // Default 8 hours
+          requirements: details.requirements
+        }
+      };
+
+      const bookingResult = await venueService!.createBooking(bookingRequest);
+
+      // Transform to API response format
+      const booking = {
+        bookingId: bookingResult.bookingId,
+        bookingHash: bookingResult.bookingHash,
+        status: bookingResult.status,
+        venue: {
+          id: bookingResult.venue.id,
+          name: bookingResult.venue.name,
+          location: {
+            address: `${bookingResult.venue.location} Venue`,
+            city: bookingResult.venue.location,
+            country: 'Spain'
+          }
+        },
+        contact: bookingResult.client,
+        details: {
+          ...details,
+          datetime: bookingResult.datetime
+        },
+        pricing: {
+          basePrice: bookingResult.totalPrice || 0,
+          totalPrice: bookingResult.totalPrice || 0,
+          currency: bookingResult.currency || 'EUR',
+          breakdown: [
+            { item: 'Venue rental', amount: bookingResult.totalPrice || 0 }
+          ]
+        },
+        nextSteps: [
+          'Booking confirmed with venue provider',
+          'You will receive confirmation email shortly',
+          'Venue contact details provided below'
+        ],
+        metadata: {
+          createdAt: new Date().toISOString(),
+          provider: 'simplybook',
+          reference: bookingResult.bookingHash,
+          source: 'api',
+          realtime: true
+        }
+      };
+
+      res.json({
+        success: true,
+        data: booking
+      });
+      return;
+    }
+
+    // Fallback to mock booking when SimplyBook.me is not configured
     const venue = mockVenues.find(v => v.id === details.venueId);
     if (!venue) {
       res.status(404).json({
@@ -258,7 +462,7 @@ router.post('/venues/book', async (req, res) => {
       return;
     }
 
-    // Create booking
+    // Create mock booking
     const bookingId = `BOOK_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     const booking = {
       bookingId,
