@@ -244,10 +244,21 @@ export class SimplyBookClient {
     logger.info('Fetching SimplyBook services');
     
     try {
-      const services = await this.makeRpcCall<SimplyBookService[]>('getEventList');
+      const servicesResponse = await this.makeRpcCall<any>('getEventList');
+      
+      // SimplyBook.me returns services as an object with IDs as keys
+      let services: SimplyBookService[] = [];
+      
+      if (Array.isArray(servicesResponse)) {
+        services = servicesResponse;
+      } else if (typeof servicesResponse === 'object' && servicesResponse !== null) {
+        // Convert object to array
+        services = Object.values(servicesResponse);
+      }
       
       logger.info('SimplyBook services fetched successfully', {
         count: services.length,
+        serviceIds: services.map(s => s.id),
       });
       
       return services;
@@ -266,10 +277,21 @@ export class SimplyBookClient {
     logger.info('Fetching SimplyBook units');
     
     try {
-      const units = await this.makeRpcCall<SimplyBookUnit[]>('getUnitList');
+      const unitsResponse = await this.makeRpcCall<any>('getUnitList');
+      
+      // SimplyBook.me returns units as an object with IDs as keys
+      let units: SimplyBookUnit[] = [];
+      
+      if (Array.isArray(unitsResponse)) {
+        units = unitsResponse;
+      } else if (typeof unitsResponse === 'object' && unitsResponse !== null) {
+        // Convert object to array
+        units = Object.values(unitsResponse);
+      }
       
       logger.info('SimplyBook units fetched successfully', {
         count: units.length,
+        unitIds: units.map(u => u.id),
       });
       
       return units;

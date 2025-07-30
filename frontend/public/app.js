@@ -1,9 +1,9 @@
 // AI Venue Booking - Frontend JavaScript
-// Connects to backend API running on port 3003
+// Connects to backend API running on port 3001
 
 class VenueBookingApp {
     constructor() {
-        this.apiUrl = 'http://localhost:3003/api';
+        this.apiUrl = 'http://localhost:3001/api';
         this.debugMode = false;
         this.selectedVenue = null;
         this.init();

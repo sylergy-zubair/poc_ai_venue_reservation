@@ -94,7 +94,7 @@ router.post('/extract', async (req, res) => {
         metadata: {
           processingTime: result.metadata?.processingTime || 0,
           timestamp: new Date().toISOString(),
-          model: 'llama3.1:8b',
+          model: result.metadata?.model || 'gemini-1.5-flash',
           fromCache: false
         }
       }
