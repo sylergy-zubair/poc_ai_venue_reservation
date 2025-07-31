@@ -1,6 +1,111 @@
 # Troubleshooting Guide
 
+**Last Updated:** July 31, 2025  
+**Version:** 1.0.0  
+
 This comprehensive troubleshooting guide helps you diagnose and resolve common issues in the AI-Powered Venue Search & Booking POC application.
+
+## 🚨 Critical Issues (Found in Testing)
+
+### Gemini API Performance Issues - CRITICAL
+
+**Problem**: Entity extraction taking 30-118 seconds (should be <2s)
+
+**Symptoms:**
+- Simple queries: 2.6s response
+- Complex queries: 118+ seconds response  
+- Backend reports "critical" status for Gemini LLM
+- Inconsistent performance across similar queries
+
+**Root Causes:**
+1. **Invalid API Key**: Placeholder test key not working
+2. **API Quota Issues**: Free tier limitations exceeded
+3. **Network Problems**: Connectivity issues to Google servers
+4. **Configuration Issues**: Wrong model parameters or endpoints
+
+**Immediate Solutions:**
+```bash
+# 1. Verify API key is valid
+echo $GEMINI_API_KEY  # Should start with AIza...
+
+# 2. Get new API key from Google AI Studio
+# Visit: https://aistudio.google.com/
+
+# 3. Update .env with real API key
+GEMINI_API_KEY=AIzaSyC_your_real_api_key_here
+
+# 4. Add request timeout to prevent 118s waits
+GEMINI_REQUEST_TIMEOUT=30000  # 30 seconds max
+
+# 5. Restart backend
+cd backend && npm start
+```
+
+**Performance Optimization:**
+```bash
+# Reduce token usage for faster responses
+GEMINI_MAX_TOKENS=300  # Instead of 500
+GEMINI_TEMPERATURE=0.1  # Keep deterministic
+
+# Test with simple query first
+curl -X POST http://localhost:3001/api/extract \
+  -H "Content-Type: application/json" \
+  -d '{"query": "venue for 50 people"}'
+```
+
+### Rate Limiting Too Aggressive - HIGH
+
+**Problem**: Health checks blocked after single request
+
+**Symptoms:**
+- "/health" returns "Too many requests" 
+- Cannot monitor system status
+- Development workflow disrupted
+
+**Solution:**
+```typescript
+// Exclude health endpoints from rate limiting
+app.use('/health', (req, res, next) => {
+  req.skipRateLimit = true;
+  next();
+});
+
+// Or increase health check limits
+const healthLimiter = rateLimit({
+  windowMs: 60 * 1000,   // 1 minute
+  max: 1000              // Very high limit
+});
+```
+
+### Booking Endpoint Failure - HIGH  
+
+**Problem**: All venue bookings fail with "BOOKING_FAILED"
+
+**Diagnosis:**
+```bash
+# Test booking endpoint
+curl -X POST http://localhost:3001/api/venues/book \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contact": {"name": "Test", "email": "test@example.com"},
+    "details": {"venueId": "2-2", "eventType": "meeting"}
+  }'
+```
+
+**Solutions:**
+1. **Enable Mock Booking Mode** (immediate fix):
+   ```bash
+   # Comment out SimplyBook credentials in .env
+   # SIMPLYBOOK_COMPANY_LOGIN=
+   # SIMPLYBOOK_API_KEY=
+   ```
+
+2. **Debug SimplyBook Integration**:
+   ```bash
+   # Verify credentials
+   echo $SIMPLYBOOK_COMPANY_LOGIN
+   echo $SIMPLYBOOK_API_KEY
+   ```
 
 ## 🚀 Quick Diagnosis
 
